@@ -1,0 +1,45 @@
+---
+title: "Exploratory Final Proj Work"
+author: "Stephan Kadonoff"
+format: html
+editor: visual
+---
+
+## Exploratory Work
+
+```{r}
+library(tidyverse)
+library(here)
+```
+
+```{r}
+# read in CSV of UK data
+uk_carbon_data <- read_csv(here("data", "carbon_data_uk.csv"))
+```
+
+```{r}
+# explore via visualization
+ggplot(uk_carbon_data, aes(x = Year,
+                           y = Total)) +
+  geom_point() +
+  geom_vline(xintercept = 2013,
+             color = "red",
+             linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "UK Carbon Emissions by Year")
+```
+
+```{r}
+# filter to only data from 1850
+uk_carbon_scope <- uk_carbon_data %>%
+  filter(Year >= 1850)
+
+ggplot(uk_carbon_scope, aes(x = Year,
+                           y = Total)) +
+  geom_point() +
+  geom_vline(xintercept = 2013,
+             color = "red",
+             linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "UK Carbon Emissions by Year")
+```
