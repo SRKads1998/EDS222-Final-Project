@@ -21,7 +21,7 @@ To understand the efficacy of this carbon pricing scheme, we will be utilizing a
 
 #### Hypothesis
 
-Carbon pricing changed the rate of carbon emission decrease per year faster than without. H0: Slope(s) before and after the breakpoint equal 0 HA: Slope(s) Slopes after the breakpoint are less than 0.
+Carbon pricing changed the rate of carbon emission decrease per year faster than without. H0: Slope(s) before and after the breakpoint equal 0 HA: Slope(s) after the breakpoint are less than 0.
 
 $$    
 \begin{align}
@@ -172,9 +172,9 @@ simulated_data <- tibble(year = simulated_years,
 
 ```
 
-To create a simulated dataset of emissions, we utilized the 
+To create a simulated dataset of emissions, we utilized the above listed steps, but we also had to add in a degree of uncertainty and variance. This was done with utilizing the above listed coefficients, but also through then joining the simulated components and then joining them via the `tibble()` function. 
 
-Now that we have a simulated data set, lets see if we can replicate the results from our original segmented model.
+Now that we have a simulated data set and model, lets see if we can replicate the results from our original segmented model.
 
 ```{r}
 # created a simulated lm model
@@ -222,7 +222,7 @@ slope_table
 
 From the data above, we see that the emissions slopes drastically decreased at each breakpoint. As discussed, the model found that the breakpoints were found at 1969 and 2006. The `segmented()` function did not see a distinct enough slope decrease after the 2013 policy intervention to create another breakpoint at that year. 
 
-Let's create a dataframe where we utilize our segmented model to mutate the original emissions dataframe. We will also create a prediction grid to show a ribbon around the summary model.  
+Let's create a dataframe where we utilize our segmented model to mutate the original emissions dataframe, which we will utilize to create the ribbon of variation along the model's different segments. 
 
 ```{r}
 # create a new dataframe with the CIs for Final Mapping
@@ -233,7 +233,7 @@ prediction_frame <- uk_emission_scope %>%
          lower = fit - 1.25 * se)
 ```
 
-With this prediction dataframe, we have the 
+Now, with all these pieces, lets plot the segmented model w/ a ribbon and the original emissions data set. 
 
 ```{r}
 # plot it
@@ -251,7 +251,11 @@ confidence_plot
 
 ## Interpretation and Closing Thoughts
 
+To summarize what we've accomplished so far, we have taken a dataset containing two key variables, carbon emissions (in metric tons), and the year in which that quantity of carbon was emitted, and created a model, and with that we were able to visualize and understand the most significant changes in the rate of emissions by each year. 
 
+The original focus of this analysis was to determine if there was a change in slope after the UK's carbon pricing policy intervention that led to a steeper decrease in emissions per year then before. Once we began to utilize our data, however, the model did not see a significant enough change in the immediate years before and after the policy intervention to see them as distinct. 
 
+At each breakpoint, however, we did see a negative change of that segment's slope than the segment before it. While our R-squared values were not great enough to warrant rejecting the null hypothesis, the decrease in slope does imply some efficacy. With that said, the fact that the model's fitted breakpoint year was before the expect year of 2013 does also call into question the efficacy of the policy itself, since the total emissions were trending down regardless. 
 
+If we were to revisit this subject in the future, I think incorporating the exact make-up of each year's energy sum, as well as the year-to-year UK average costs of each energy source, would help give context to how the energy streams make-up was changing in the lead-up to the policy intervention, and perhaps help account for the model's choosing of a breakpoint before the intervention year. It would also be interesting to see different trends, such as for countries which have removed carbon pricing schemes (e.g. Australia). All in all, adding more relevant variables and accounting for them within the model would help understand the correlation between carbon emissions and their year. 
 
