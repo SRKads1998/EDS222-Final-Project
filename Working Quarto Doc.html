@@ -8,7 +8,7 @@
 
 <meta name="author" content="Stephan Kadonoff">
 
-<title>Exploratory Final Proj Work</title>
+<title>UK Carbon Emissions: Segmented Model Application for Carbon Pricing Analysis</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -112,7 +112,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Exploratory Final Proj Work</h1>
+<h1 class="title">UK Carbon Emissions: Segmented Model Application for Carbon Pricing Analysis</h1>
 </div>
 
 
@@ -143,23 +143,30 @@ window.Quarto = {
 <p>To understand the efficacy of this carbon pricing scheme, we will be utilizing a segmented statistical model as an interrupted time series analysis. We will see if there was a change between the post intervention slope at 2013 when the policy was implemented, and the slope before it.</p>
 <section id="hypothesis" class="level4">
 <h4 class="anchored" data-anchor-id="hypothesis">Hypothesis</h4>
-<p>Carbon pricing changed the rate of carbon emission decrease per year faster than without. H0: Slope(s) before and after each breakpoint are equal H1: Slope(s) before and after each breakpoint are not equal</p>
+<p>Carbon pricing changed the rate of carbon emission decrease per year faster than without. H0: Slope(s) before and after the breakpoint equal 0 HA: Slope(s) Slopes after the breakpoint are less than 0.</p>
 <p><span class="math display">\[    
 \begin{align}
-Carbon Emissions: H0 : B1 = 0 \\
-                  H1 : B2 &lt; 0 \\  
+Carbon Emissions: H0 : B3 = 0 \\
+                  HA : B3 &lt; 0 \\  
 \end{align}                  
-\]</span><br>
-statistical model notation:</p>
-<p>$$</p>
-<p>Yt = + + + </p>
-<p>$$ Y(Carbon Emissions) = B0 + B1(Year) + B2() + B3(Post_Pricing)</p>
+\]</span></p>
+<p>statistical model notation:</p>
+<p><span class="math display">\[
+Yt = \beta*{0} + \beta{1}\text{t} + \beta*{2}\text{(t - ψ1)} + \beta{3}\text{(t - ψ2)}
+\]</span></p>
 <p>A segmented model is one characterized by a distinct change in slope or “breakpoint” where-in the model’s line shifts to a new slope value. B0 is, of course, the intercept, B1 is the initial slope of the model along the initial segment of the model. B2 is the point at which the effect is applied to the model’s population, causing the change in slope, with B3 itself showing the new slope after the intervention.</p>
 <p>In the context of this study looking at the UK’s carbon pricing model, we say that Y is Carbon Emissions, B1 is the slope of emissions over years, B2 is the change in slope at the first breakpoint when pricing is applied, and B3 is the change at the second breakpoint. The model should, assuming proper fit, produce a single line with 3 distinct slopes.</p>
 </section>
 <section id="dag" class="level4">
 <h4 class="anchored" data-anchor-id="dag">DAG</h4>
-<p><img src="projdag.png" class="img-fluid" alt="Dag"> This dag is a brief overlook at the relationship between the factors which ultimately produce carbon emissions. For the sake of our model, we are only evaluating the change in year as they relate to the two major expected breakpoints along the segmented model, and as these then factor into the total output of carbon emissions.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="FinalDag.png" class="img-fluid figure-img"></p>
+<figcaption>Dag</figcaption>
+</figure>
+</div>
+<p>This dag is a brief overlook at the relationship between the factors which ultimately produce carbon emissions. Specifically, we are looking at three key variables for understanding our model Year, Carbon Pricing, Emissions. The variable Year impacts status of Carbon Pricing, since Year determines if the Carbon Pricing Policy has been implemented yet or not.</p>
+<p>Year also impacts Emissions, since the total quantity of Emissions changes by year. Lastly Carbon Pricing also impacts Emissions itself since we would expect a Carbon Pricing policy to impact the choice of fuel source, and thus total emissions.</p>
 </section>
 </section>
 <section id="exploratory-work" class="level2">
@@ -168,7 +175,8 @@ statistical model notation:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(segmented)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(segmented)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># read in emission data</span></span>
@@ -179,6 +187,8 @@ statistical model notation:</p>
 </div>
 <p>Now that we have the data read in, we can begin cleaning and filtering the data for the specific time series we want to evaluate for this study. According to the data, total carbon emissions, as well as per capita emissions, peaked in 1971, so let’s filter to just before that to 1960.</p>
 <div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># filter to near peak yearly carbon emissions</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>uk_emission_scope <span class="ot">&lt;-</span> uk_emission_data <span class="sc">%&gt;%</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Year <span class="sc">&gt;=</span> <span class="dv">1960</span>)</span>
@@ -194,6 +204,7 @@ statistical model notation:</p>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Year"</span>,</span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Carbon Emissions in Metric Tons"</span>)</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>exploratory_plot</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -204,6 +215,11 @@ statistical model notation:</p>
 </div>
 <p>With this exploratory plot, we can already see a couple distinct trends emerging. There is a rise and then peak in the early 1970s, a noticeable drop in the second half of that decade and for the first half of the 1980s, but then a rise again throughout the 1990s and start of the new millennium. Then, as we approach the year 2010, we see a couple steep drops in total emissions. The vertical line is at 2013, the year the government began their carbon pricing scheme.</p>
 <p>To understand if this decrease in emissions year over year after the carbon pricing scheme was instituted was steeper than the decrease that is observed before it, we will utilize a segmented model via an interrupted time series analysis of the UK’s carbon emissions.</p>
+</section>
+<section id="initial-model-fitting" class="level2">
+<h2 class="anchored" data-anchor-id="initial-model-fitting">Initial Model fitting</h2>
+<section id="wrangle-data-for-model" class="level3">
+<h3 class="anchored" data-anchor-id="wrangle-data-for-model">Wrangle Data for Model</h3>
 <p>To begin with, we will need to do some data wrangling to set-up our data set for modeling.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># mutate emissions variable to format for a Segmented Model </span></span>
@@ -213,6 +229,9 @@ statistical model notation:</p>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">post_pricing =</span> <span class="fu">case_when</span>(pricing <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="fu">row_number</span>() <span class="sc">-</span> <span class="dv">54</span>, <span class="cn">TRUE</span><span class="sc">~</span><span class="dv">0</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Next we will have to create a linear model which we will then use as the basis for the breakpoint/segmented model. Based on the earlier exploratory plot, we can see that there is a drop in carbon emissions starting in the early 2000s. For that reason, we will add a breakpoint at the Year 2002, so that we can better understand if the change in slope we expect to see after 2013 was already appearing in the decade before.</p>
+</section>
+<section id="create-linear-and-segmented-models" class="level3">
+<h3 class="anchored" data-anchor-id="create-linear-and-segmented-models">Create Linear and Segmented Models</h3>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a linear model of the relationship between emissions and year</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>lm_emission_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(Total <span class="sc">~</span> Year, <span class="at">data =</span> uk_emission_scope)</span>
@@ -233,8 +252,13 @@ psi1.Year 1969.20     1963.51    1974.89
 psi2.Year 2006.77     2004.91    2008.62</code></pre>
 </div>
 </div>
+</section>
+<section id="create-simulated-models" class="level3">
+<h3 class="anchored" data-anchor-id="create-simulated-models">Create Simulated Models</h3>
 <p>Now, lets try to evaluate the model’s fit by simulating data, according to the model’s assumptions. We will replicate the year range, so 1960 to 2024, and take the coefficients from our segmented model. Lastly, we will also take the breakpoints from our model, rounded down to their closest years 1969 and 2006.</p>
 <div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set the seed for consistency</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -265,12 +289,162 @@ psi2.Year 2006.77     2004.91    2008.62</code></pre>
 <span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="co"># create a tibble of simulated data, joining the simulated years and simulated emissions</span></span>
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>simulated_data <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">year =</span> simulated_years,</span>
 <span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>                         <span class="at">total =</span> simulated_emissions)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
+<p>To create a simulated dataset of emissions, we</p>
 <p>Now that we have a simulated data set, lets see if we can replicate the results from our original segmented model.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># created a simulated lm model</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>simulated_lm_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(total <span class="sc">~</span> year, <span class="at">data =</span> simulated_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>simulated_lm_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(total <span class="sc">~</span> year, <span class="at">data =</span> simulated_data)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># fit the simulated lm model to a segmented model</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>simulated_seg_model <span class="ot">&lt;-</span> <span class="fu">segmented</span>(simulated_lm_model,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">seg.Z =</span> <span class="sc">~</span>year,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">psi =</span> <span class="fu">list</span>(<span class="at">year =</span> <span class="fu">c</span>(break_1, break_2)))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># check the summary and confidence interval outputs of the simulated segmented model</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(simulated_seg_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    ***Regression Model with Segmented Relationship(s)***
+
+Call: 
+segmented.lm(obj = simulated_lm_model, seg.Z = ~year, psi = list(year = c(break_1, 
+    break_2)))
+
+Estimated Break-Point(s):
+               Est. St.Err
+psi1.year 1968.000  3.811
+psi2.year 2007.114  1.092
+
+Coefficients of the linear terms:
+             Estimate Std. Error t value Pr(&gt;|t|)
+(Intercept) -5801.984   7499.283  -0.774    0.442
+year            3.266      3.819   0.855    0.396
+U1.year        -5.447      3.834  -1.421       NA
+U2.year       -13.404      1.271 -10.542       NA
+
+Residual standard error: 24.75 on 59 degrees of freedom
+Multiple R-Squared: 0.9398,  Adjusted R-squared: 0.9347 
+
+Boot restarting based on 6 samples. Last fit:
+Convergence attained in 3 iterations (rel. change 9.1947e-08)</code></pre>
 </div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(simulated_seg_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             Est. CI(95%).low CI(95%).up
+psi1.year 1968.00     1960.37    1975.63
+psi2.year 2007.11     2004.93    2009.30</code></pre>
+</div>
+</div>
+<p>With the simulated model created above, with an initial look at the model’s summary and confidence intervals, lets create a tibble to show that we are recovering the parameters from the simulated data.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># extract the psi values from the simulated model</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>break_estimate <span class="ot">&lt;-</span> <span class="fu">summary</span>(simulated_seg_model)<span class="sc">$</span>psi</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">parameter =</span> <span class="fu">c</span>(<span class="st">"break_1"</span>, <span class="st">"break_2"</span>),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">true =</span> <span class="fu">c</span>(break_1, break_2),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">estimated =</span> break_estimate[, <span class="st">"Est."</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 3
+  parameter  true estimated
+  &lt;chr&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+1 break_1    1969     1968.
+2 break_2    2006     2007.</code></pre>
+</div>
+</div>
+<p>The table above shows that the estimated data and model created an output where the estimated breakpoints are almost identical to the “true” breakpoint years, with the estimated years falling within the CI of the original segmented model.</p>
+</section>
+</section>
+<section id="find-and-discuss-uncertainty" class="level2">
+<h2 class="anchored" data-anchor-id="find-and-discuss-uncertainty">Find And Discuss Uncertainty</h2>
+<section id="plot-cis-of-the-segmented-model" class="level3">
+<h3 class="anchored" data-anchor-id="plot-cis-of-the-segmented-model">Plot CIs of the Segmented Model</h3>
+<p>So far we have completed fitting the model and simulating it. But now we need to understand the uncertainty that exists within the model, and visualize both the model’s estimates and the range of potential values that we may find.</p>
+<p>Fortunately, the segmented library package in R has a function <code>slope()</code> which will help us find the CIs for the each segment along the plotted line.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># extract the slope of the segmented model</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>seg_model_slope <span class="ot">&lt;-</span> <span class="fu">slope</span>(seg_emission_model)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># find the CI's per each segment</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>slope_table <span class="ot">&lt;-</span> <span class="fu">kable</span>(seg_model_slope)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>slope_table</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="kable_wrapper">
+<tbody>
+<tr>
+<td>
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: right;">Est.</th>
+<th style="text-align: right;">St.Err.</th>
+<th style="text-align: right;">t value</th>
+<th style="text-align: right;">CI(95%).l</th>
+<th style="text-align: right;">CI(95%).u</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">slope1</td>
+<td style="text-align: right;">3.5143</td>
+<td style="text-align: right;">2.41660</td>
+<td style="text-align: right;">1.4543</td>
+<td style="text-align: right;">-1.3212</td>
+<td style="text-align: right;">8.3499</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">slope2</td>
+<td style="text-align: right;">-1.8268</td>
+<td style="text-align: right;">0.33797</td>
+<td style="text-align: right;">-5.4053</td>
+<td style="text-align: right;">-2.5031</td>
+<td style="text-align: right;">-1.1505</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">slope3</td>
+<td style="text-align: right;">-15.2840</td>
+<td style="text-align: right;">0.99719</td>
+<td style="text-align: right;">-15.3270</td>
+<td style="text-align: right;">-17.2800</td>
+<td style="text-align: right;">-13.2890</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a </span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>prediction_frame <span class="ot">&lt;-</span> uk_emission_scope <span class="sc">%&gt;%</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">fit =</span> <span class="fu">predict</span>(seg_emission_model),</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">se =</span> <span class="fu">predict</span>(seg_emission_model, <span class="at">se.fit =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>se.fit,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">upper =</span> fit <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">lower =</span> fit <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>PLOT IT</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot it</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> uk_emission_scope, <span class="fu">aes</span>(Year, Total)) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="at">data =</span> prediction_frame, <span class="fu">aes</span>(<span class="at">x =</span> Year, <span class="at">ymin =</span> lower, <span class="at">ymax =</span> upper), <span class="at">alpha =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> prediction_frame, <span class="fu">aes</span>(<span class="at">x =</span> Year, <span class="at">y =</span> fit), <span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Working-Quarto-Doc_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 </section>
 
 </main>

@@ -1,5 +1,5 @@
 ---
-title: "Exploratory Final Proj Work"
+title: "UK Carbon Emissions: Segmented Model Application for Carbon Pricing Analysis"
 author: "Stephan Kadonoff"
 format: html
 editor: visual
@@ -21,22 +21,22 @@ To understand the efficacy of this carbon pricing scheme, we will be utilizing a
 
 #### Hypothesis
 
-Carbon pricing changed the rate of carbon emission decrease per year faster than without. H0: Slope(s) before and after each breakpoint are equal H1: Slope(s) before and after each breakpoint are not equal
+Carbon pricing changed the rate of carbon emission decrease per year faster than without. H0: Slope(s) before and after the breakpoint equal 0 HA: Slope(s) Slopes after the breakpoint are less than 0.
 
 $$    
 \begin{align}
-Carbon Emissions: H0 : B1 = 0 \\
-                  H1 : B2 < 0 \\  
+Carbon Emissions: H0 : B3 = 0 \\
+                  HA : B3 < 0 \\  
 \end{align}                  
-$$\
+$$
+
+
 statistical model notation:
 
 $$
-
-Yt = \beta*{0} + \beta{1}\text{Year} + \beta*{2}\text{(t - ψ1)} + \beta{3}\text{(t - ψ2)}
-
+Yt = \beta*{0} + \beta{1}\text{t} + \beta*{2}\text{(t - ψ1)} + \beta{3}\text{(t - ψ2)}
 $$ 
-Y(Carbon Emissions) = B0 + B1(Year) + B2() + B3(Post_Pricing)
+
 
 A segmented model is one characterized by a distinct change in slope or "breakpoint" where-in the model's line shifts to a new slope value. B0 is, of course, the intercept, B1 is the initial slope of the model along the initial segment of the model. B2 is the point at which the effect is applied to the model's population, causing the change in slope, with B3 itself showing the new slope after the intervention.
 
@@ -44,7 +44,11 @@ In the context of this study looking at the UK's carbon pricing model, we say th
 
 #### DAG
 
-![Dag](projdag.png) This dag is a brief overlook at the relationship between the factors which ultimately produce carbon emissions. For the sake of our model, we are only evaluating the change in year as they relate to the two major expected breakpoints along the segmented model, and as these then factor into the total output of carbon emissions.
+![Dag](FinalDag.png)
+
+This dag is a brief overlook at the relationship between the factors which ultimately produce carbon emissions. Specifically, we are looking at three key variables for understanding our model Year, Carbon Pricing, Emissions. The variable Year impacts status of Carbon Pricing, since Year determines if the Carbon Pricing Policy has been implemented yet or not. 
+
+Year also impacts Emissions, since the total quantity of Emissions changes by year. Lastly Carbon Pricing also impacts Emissions itself since we would expect a Carbon Pricing policy to impact the choice of fuel source, and thus total emissions. 
 
 ## Exploratory Work
 
@@ -54,6 +58,7 @@ To begin with, we will add the necessary libraries for this analysis, and then r
 library(tidyverse)
 library(here)
 library(segmented)
+library(knitr)
 ```
 
 ```{r}
@@ -67,6 +72,7 @@ uk_emission_data <- emission_data %>%
 Now that we have the data read in, we can begin cleaning and filtering the data for the specific time series we want to evaluate for this study. According to the data, total carbon emissions, as well as per capita emissions, peaked in 1971, so let's filter to just before that to 1960.
 
 ```{r}
+#| code-fold: true
 # filter to near peak yearly carbon emissions
 uk_emission_scope <- uk_emission_data %>%
   filter(Year >= 1960)
@@ -88,6 +94,10 @@ With this exploratory plot, we can already see a couple distinct trends emerging
 
 To understand if this decrease in emissions year over year after the carbon pricing scheme was instituted was steeper than the decrease that is observed before it, we will utilize a segmented model via an interrupted time series analysis of the UK's carbon emissions.
 
+## Initial Model fitting
+
+### Wrangle Data for Model
+
 To begin with, we will need to do some data wrangling to set-up our data set for modeling.
 
 ```{r}
@@ -101,6 +111,8 @@ uk_emission_scope <- uk_emission_scope %>%
 ```
 
 Next we will have to create a linear model which we will then use as the basis for the breakpoint/segmented model. Based on the earlier exploratory plot, we can see that there is a drop in carbon emissions starting in the early 2000s. For that reason, we will add a breakpoint at the Year 2002, so that we can better understand if the change in slope we expect to see after 2013 was already appearing in the decade before.
+
+### Create Linear and Segmented Models
 
 ```{r}
 # create a linear model of the relationship between emissions and year
@@ -121,9 +133,12 @@ Lets find the confidence interval(s) of the model.
 confint(seg_emission_model)
 ```
 
+### Create Simulated Models
 Now, lets try to evaluate the model's fit by simulating data, according to the model's assumptions. We will replicate the year range, so 1960 to 2024, and take the coefficients from our segmented model. Lastly, we will also take the breakpoints from our model, rounded down to their closest years 1969 and 2006.
 
+
 ```{r}
+#| code-fold: true
 # set the seed for consistency
 set.seed(42)
 
@@ -157,12 +172,86 @@ simulated_data <- tibble(year = simulated_years,
 
 ```
 
+To create a simulated dataset of emissions, we utilized the 
+
 Now that we have a simulated data set, lets see if we can replicate the results from our original segmented model.
 
 ```{r}
 # created a simulated lm model
 simulated_lm_model <- lm(total ~ year, data = simulated_data)
 
+# fit the simulated lm model to a segmented model
+simulated_seg_model <- segmented(simulated_lm_model,
+                                 seg.Z = ~year,
+                                 psi = list(year = c(break_1, break_2)))
+
+# check the summary and confidence interval outputs of the simulated segmented model
+
+summary(simulated_seg_model)
+confint(simulated_seg_model)
+
+
 ```
+With the simulated model created above, with an initial look at the model's summary and confidence intervals, lets create a tibble to show that we are recovering the parameters from the simulated data. 
+```{r}
+# extract the psi values from the simulated model
+break_estimate <- summary(simulated_seg_model)$psi
+
+tibble(parameter = c("break_1", "break_2"),
+       true = c(break_1, break_2),
+       estimated = break_estimate[, "Est."])
+```
+The table above shows that the estimated data and model created an output where the estimated breakpoints are almost identical to the "true" breakpoint years, with the estimated years falling within the CI of the original segmented model.  
+
+## Find And Discuss Uncertainty
+
+### Plot The Segmented Model
+
+So far we have completed fitting the model and simulating it. But now we need to understand the uncertainty that exists within the model, and visualize both the model's estimates and the range of potential values that we may find.
+
+Fortunately, the segmented library package in R has a function `slope()` which will help us find the CIs for the each segment along the plotted line. 
+```{r}
+# extract the slope of the segmented model
+seg_model_slope <- slope(seg_emission_model)
+
+# find the CI's per each segment and create a table 
+slope_table <- kable(seg_model_slope)
+
+slope_table
+```
+
+From the data above, we see that the emissions slopes drastically decreased at each breakpoint. As discussed, the model found that the breakpoints were found at 1969 and 2006. The `segmented()` function did not see a distinct enough slope decrease after the 2013 policy intervention to create another breakpoint at that year. 
+
+Let's create a dataframe where we utilize our segmented model to mutate the original emissions dataframe. We will also create a prediction grid to show a ribbon around the summary model.  
+
+```{r}
+# create a new dataframe with the CIs for Final Mapping
+prediction_frame <- uk_emission_scope %>%
+  mutate(fit = predict(seg_emission_model),
+         se = predict(seg_emission_model, se.fit = TRUE)$se.fit,
+         upper = fit + 1.25 * se,
+         lower = fit - 1.25 * se)
+```
+
+With this prediction dataframe, we have the 
+
+```{r}
+# plot it
+confidence_plot <- ggplot() +
+  geom_point(data = uk_emission_scope, aes(Year, Total)) +
+  geom_ribbon(data = prediction_frame, aes(x = Year, ymin = lower, ymax = upper), alpha = 0.2) +
+  geom_line(data = prediction_frame, aes(x = Year, y = fit), color = "black") +
+  theme_minimal() +
+  labs(title = "UK Carbon Emissions by Year",
+       x = "Year",
+       y = "Carbon Emissions in Metric Tons")
+
+confidence_plot
+```
+
+## Interpretation and Closing Thoughts
+
+
+
 
 
