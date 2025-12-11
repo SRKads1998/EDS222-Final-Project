@@ -1,7 +1,10 @@
 ---
 title: "UK Carbon Emissions: Segmented Model Application for Carbon Pricing Analysis"
 author: "Stephan Kadonoff"
-format: html
+format:
+  html:
+    self-contained: true
+    standalone: true
 editor: visual
 execute:
   echo: true
